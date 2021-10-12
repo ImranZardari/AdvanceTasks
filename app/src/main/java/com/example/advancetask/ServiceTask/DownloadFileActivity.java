@@ -1,4 +1,4 @@
-package com.example.advancetask;
+package com.example.advancetask.ServiceTask;
 
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
@@ -7,16 +7,23 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -27,15 +34,22 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.advancetask.Utils.DownloadService;
+import com.example.advancetask.R;
+
+import com.example.advancetask.ServiceTask.Utils.DownloadService;
 
 import org.jetbrains.annotations.NotNull;
 
-public class DownloadActivity extends AppCompatActivity {
 
-    String download_url = "https://file-examples-com.github.io/uploads/2017/02/file-sample_100kB.doc";
+
+public class DownloadFileActivity extends AppCompatActivity {
+
+    String docFile_url = "https://file-examples-com.github.io/uploads/2017/02/file-sample_100kB.doc";
+    String mp3_url = "https://file-examples-com.github.io/uploads/2017/11/file_example_MP3_700KB.mp3";
+    String mp4_url = "https://file-examples-com.github.io/uploads/2017/04/file_example_MP4_480_1_5MG.mp4";
+    String jpg_url = "https://file-examples-com.github.io/uploads/2017/10/file_example_JPG_2500kB.jpg";
+
     private TextView downloadStatus;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,7 +57,6 @@ public class DownloadActivity extends AppCompatActivity {
         downloadStatus = (TextView) findViewById(R.id.download_status);
         Button btnDownload = (Button) findViewById(R.id.btn_download);
         btnDownload.setOnClickListener(onDownloadListener());
-
 
     }
     private View.OnClickListener onDownloadListener() {
@@ -53,20 +66,27 @@ public class DownloadActivity extends AppCompatActivity {
             public void onClick(View v) {
                if(isPermissionGranted()){
 
-                   //todo : --->  we can make another intentPutExtra and treat different files types
 
-                   Intent intent = new Intent(DownloadActivity.this, DownloadService.class);
-                   intent.putExtra(DownloadService.FILENAME, "doc_file.doc");
-                   intent.putExtra(DownloadService.URL, download_url);
-                   startService(intent);
-                   downloadStatus.setText("Downloading...");
-                   Toast.makeText(DownloadActivity.this, "Already got access permission", Toast.LENGTH_SHORT).show();
+                   //todo : --->  we can make another approach to pass different file types and file names
+                   downloadFile("file_example.mp4",mp4_url);
+
 
                }else
                    takePermissions();
             }
         };
     }
+
+    private void downloadFile(String fileName,String fileUrl){
+        Intent intent = new Intent(DownloadFileActivity.this, DownloadService.class);
+        intent.putExtra(DownloadService.FILENAME, fileName);
+        intent.putExtra(DownloadService.URL, fileUrl);
+        startService(intent);
+        downloadStatus.setText("Downloading...");
+        Toast.makeText(DownloadFileActivity.this, "Already got access permission", Toast.LENGTH_SHORT).show();
+
+    }
+
 
     @Override
     protected void onResume() {
@@ -88,10 +108,12 @@ public class DownloadActivity extends AppCompatActivity {
             if (bundle != null) {
                 int resultCode = bundle.getInt(DownloadService.RESULT);
                 if (resultCode == RESULT_OK) {
-                    Toast.makeText(DownloadActivity.this, "File downloaded!", Toast.LENGTH_LONG).show();
+                    Toast.makeText(DownloadFileActivity.this, "File downloaded!", Toast.LENGTH_LONG).show();
+                    // showDownloadCompletedNotification();
+                   sendMyNotification("Download Completed");
                     downloadStatus.setText("Download completed!");
                 } else {
-                    Toast.makeText(DownloadActivity.this, "Error Downloading process!", Toast.LENGTH_LONG).show();
+                    Toast.makeText(DownloadFileActivity.this, "Error Downloading process!", Toast.LENGTH_LONG).show();
                     downloadStatus.setText("Download failed!");
                 }
             }
@@ -99,9 +121,45 @@ public class DownloadActivity extends AppCompatActivity {
     };
 
 
+    private void sendMyNotification(String message) {
+
+        Intent intent = new Intent(this, DownloadFileActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
+
+        //todo --> below line of code is used to  set your sound to notification from raw (asset file) <----
+        //Uri soundUri = Uri.parse("android.resource://" + getApplicationContext().getPackageName() + "/" + R.raw.correct_answer);
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, "CH_ID")
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(getString(R.string.app_name))
+                .setContentText(message)
+                .setAutoCancel(true)
+                //.setSound(soundUri)
+                .setContentIntent(pendingIntent);
+
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+
+            notificationBuilder.setDefaults(Notification.DEFAULT_VIBRATE);
+            // Creating an Audio Attribute
+            AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .build();
+
+            // Creating Channel
+            NotificationChannel notificationChannel = new NotificationChannel("CH_ID","Testing_Audio",NotificationManager.IMPORTANCE_HIGH);
+            // notificationChannel.setSound(soundUri,audioAttributes);
+            mNotificationManager.createNotificationChannel(notificationChannel);
+        }
+        mNotificationManager.notify(0, notificationBuilder.build());
+    }
+
+
+
     private void takePermissions() {
         if (isPermissionGranted()) {
-            Toast.makeText(DownloadActivity.this, "Already Permission Granted", Toast.LENGTH_SHORT).show();
+            Toast.makeText(DownloadFileActivity.this, "Already Permission Granted", Toast.LENGTH_SHORT).show();
 
         } else {
             takePermission();
@@ -149,7 +207,7 @@ public class DownloadActivity extends AppCompatActivity {
                     if (result.getResultCode() == Activity.RESULT_OK) {
                         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
                             if (Environment.isExternalStorageManager()) {
-                                Toast.makeText(DownloadActivity.this, "Permission Granted in Android 11", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(DownloadFileActivity.this, "Permission Granted in Android 11", Toast.LENGTH_SHORT).show();
                             } else {
                                 takePermission();
                             }

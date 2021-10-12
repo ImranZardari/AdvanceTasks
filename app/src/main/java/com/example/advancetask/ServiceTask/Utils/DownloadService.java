@@ -1,4 +1,4 @@
-package com.example.advancetask.Utils;
+package com.example.advancetask.ServiceTask.Utils;
 
 import android.app.Activity;
 import android.app.IntentService;
