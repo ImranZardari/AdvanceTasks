@@ -27,7 +27,7 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".ServiceTask.Utils.DownloadService" />
+        <service android:name=".ServiceTask.Utils.DownloadJobService" />
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"

@@ -1,16 +1,5 @@
 package com.example.advancetask.ServiceTask;
 
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
-
-import androidx.core.content.ContextCompat;
-
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -34,12 +23,20 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.advancetask.R;
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 
-import com.example.advancetask.ServiceTask.Utils.DownloadService;
+import com.example.advancetask.R;
+import com.example.advancetask.ServiceTask.Utils.DownloadJobService;
 
 import org.jetbrains.annotations.NotNull;
-
 
 
 public class DownloadFileActivity extends AppCompatActivity {
@@ -50,67 +47,16 @@ public class DownloadFileActivity extends AppCompatActivity {
     String jpg_url = "https://file-examples-com.github.io/uploads/2017/10/file_example_JPG_2500kB.jpg";
 
     private TextView downloadStatus;
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_second);
-        downloadStatus = (TextView) findViewById(R.id.download_status);
-        Button btnDownload = (Button) findViewById(R.id.btn_download);
-        btnDownload.setOnClickListener(onDownloadListener());
-
-    }
-    private View.OnClickListener onDownloadListener() {
-        return new View.OnClickListener() {
-            @SuppressLint("SetTextI18n")
-            @Override
-            public void onClick(View v) {
-               if(isPermissionGranted()){
-
-
-                   //todo : --->  we can make another approach to pass different file types and file names
-                   downloadFile("file_example.mp4",mp4_url);
-
-
-               }else
-                   takePermissions();
-            }
-        };
-    }
-
-    private void downloadFile(String fileName,String fileUrl){
-        Intent intent = new Intent(DownloadFileActivity.this, DownloadService.class);
-        intent.putExtra(DownloadService.FILENAME, fileName);
-        intent.putExtra(DownloadService.URL, fileUrl);
-        startService(intent);
-        downloadStatus.setText("Downloading...");
-        Toast.makeText(DownloadFileActivity.this, "Already got access permission", Toast.LENGTH_SHORT).show();
-
-    }
-
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        registerReceiver(receiver, new IntentFilter(DownloadService.NOTIFICATION));
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        unregisterReceiver(receiver);
-    }
-
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
+    private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @SuppressLint("SetTextI18n")
         @Override
         public void onReceive(Context context, Intent intent) {
             Bundle bundle = intent.getExtras();
             if (bundle != null) {
-                int resultCode = bundle.getInt(DownloadService.RESULT);
+                int resultCode = bundle.getInt(DownloadJobService.RESULT);
                 if (resultCode == RESULT_OK) {
                     Toast.makeText(DownloadFileActivity.this, "File downloaded!", Toast.LENGTH_LONG).show();
-                    // showDownloadCompletedNotification();
-                   sendMyNotification("Download Completed");
+                    sendMyNotification("Download Completed");
                     downloadStatus.setText("Download completed!");
                 } else {
                     Toast.makeText(DownloadFileActivity.this, "Error Downloading process!", Toast.LENGTH_LONG).show();
@@ -119,6 +65,65 @@ public class DownloadFileActivity extends AppCompatActivity {
             }
         }
     };
+    ActivityResultLauncher<Intent> downloadActivityResultLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+                            if (Environment.isExternalStorageManager()) {
+                                Toast.makeText(DownloadFileActivity.this, "Permission Granted in Android 11", Toast.LENGTH_SHORT).show();
+                            } else {
+                                takePermission();
+                            }
+                        }
+
+                    }
+                }
+            });
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_second);
+        downloadStatus = findViewById(R.id.download_status);
+        Button btnDownload = findViewById(R.id.btn_download);
+        btnDownload.setOnClickListener(onDownloadListener());
+
+    }
+
+    private View.OnClickListener onDownloadListener() {
+        return new View.OnClickListener() {
+            @SuppressLint("SetTextI18n")
+            @Override
+            public void onClick(View v) {
+               if(isPermissionGranted()){
+                   //todo : --->  we can make another approach to pass different file types and file names
+                   downloadFile("file_example.doc", docFile_url);
+
+
+               } else
+                   takePermissions();
+            }
+        };
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver(receiver);
+    }
+
+    private void downloadFile(String fileName, String fileUrl) {
+        Intent intent = new Intent(DownloadFileActivity.this, DownloadJobService.class);
+        intent.putExtra(DownloadJobService.FILENAME, fileName);
+        intent.putExtra(DownloadJobService.URL, fileUrl);
+        startService(intent);
+        downloadStatus.setText("Downloading...");
+        Toast.makeText(DownloadFileActivity.this, "Already got access permission", Toast.LENGTH_SHORT).show();
+
+    }
 
 
     private void sendMyNotification(String message) {
@@ -178,6 +183,12 @@ public class DownloadFileActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        registerReceiver(receiver, new IntentFilter(DownloadJobService.NOTIFICATION));
+    }
+
     private void takePermission() {
 
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
@@ -185,37 +196,16 @@ public class DownloadFileActivity extends AppCompatActivity {
                 Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
                 intent.addCategory("android.intent.category.DEFAULT");
                 intent.setData(Uri.parse(String.format("package:%s", getApplicationContext().getPackageName())));
-                someActivityResultLauncher.launch(intent);
+                downloadActivityResultLauncher.launch(intent);
             } catch (Exception exception) {
                 Intent intent = new Intent();
                 intent.setAction(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
-                someActivityResultLauncher.launch(intent);
+                downloadActivityResultLauncher.launch(intent);
             }
         } else {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE}, 101);
         }
     }
-
-
-
-
-    ActivityResultLauncher<Intent> someActivityResultLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            new ActivityResultCallback<ActivityResult>() {
-                @Override
-                public void onActivityResult(ActivityResult result) {
-                    if (result.getResultCode() == Activity.RESULT_OK) {
-                        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
-                            if (Environment.isExternalStorageManager()) {
-                                Toast.makeText(DownloadFileActivity.this, "Permission Granted in Android 11", Toast.LENGTH_SHORT).show();
-                            } else {
-                                takePermission();
-                            }
-                        }
-
-                    }
-                }
-            });
 
 
 
