@@ -17,9 +17,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
         <activity android:name=".ThreadingTasks.ThreadsActivity" />
+        <activity android:name=".FragmentTasks.FragmentActivity" />
+        <activity android:name=".ServiceTask.JobIntentServiceActivity" />
         <activity android:name=".AdmobAdsTask.AdmobAdsActivity" />
-        <activity android:name=".ServiceTask.DownloadFileActivity">
+        <activity android:name=".ServiceTask.StartedServiceActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -27,7 +30,15 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".ServiceTask.Utils.DownloadJobService" />
+        <service
+            android:name=".ServiceTask.Utils.DownloadStartedService"
+            android:enabled="true"
+            android:exported="false" />
+
+        <service
+            android:name=".ServiceTask.Utils.DownloadJobIntentService"
+            android:enabled="true"
+            android:exported="false" />
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"

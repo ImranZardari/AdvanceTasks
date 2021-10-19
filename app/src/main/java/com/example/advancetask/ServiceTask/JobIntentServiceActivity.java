@@ -34,12 +34,12 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
 import com.example.advancetask.R;
-import com.example.advancetask.ServiceTask.Utils.DownloadJobService;
+import com.example.advancetask.ServiceTask.Utils.DownloadJobIntentService;
 
 import org.jetbrains.annotations.NotNull;
 
 
-public class DownloadFileActivity extends AppCompatActivity {
+public class JobIntentServiceActivity extends AppCompatActivity {
 
     String docFile_url = "https://file-examples-com.github.io/uploads/2017/02/file-sample_100kB.doc";
     String mp3_url = "https://file-examples-com.github.io/uploads/2017/11/file_example_MP3_700KB.mp3";
@@ -47,19 +47,30 @@ public class DownloadFileActivity extends AppCompatActivity {
     String jpg_url = "https://file-examples-com.github.io/uploads/2017/10/file_example_JPG_2500kB.jpg";
 
     private TextView downloadStatus;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_second);
+        downloadStatus = findViewById(R.id.download_status);
+        Button btnDownload = findViewById(R.id.btn_download);
+        btnDownload.setOnClickListener(onDownloadListener());
+
+    }
+
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @SuppressLint("SetTextI18n")
         @Override
         public void onReceive(Context context, Intent intent) {
             Bundle bundle = intent.getExtras();
             if (bundle != null) {
-                int resultCode = bundle.getInt(DownloadJobService.RESULT);
+                int resultCode = bundle.getInt(DownloadJobIntentService.RESULT);
                 if (resultCode == RESULT_OK) {
-                    Toast.makeText(DownloadFileActivity.this, "File downloaded!", Toast.LENGTH_LONG).show();
+                    Toast.makeText(JobIntentServiceActivity.this, "File downloaded!", Toast.LENGTH_LONG).show();
                     sendMyNotification("Download Completed");
                     downloadStatus.setText("Download completed!");
                 } else {
-                    Toast.makeText(DownloadFileActivity.this, "Error Downloading process!", Toast.LENGTH_LONG).show();
+                    Toast.makeText(JobIntentServiceActivity.this, "Error Downloading process!", Toast.LENGTH_LONG).show();
                     downloadStatus.setText("Download failed!");
                 }
             }
@@ -73,7 +84,7 @@ public class DownloadFileActivity extends AppCompatActivity {
                     if (result.getResultCode() == Activity.RESULT_OK) {
                         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
                             if (Environment.isExternalStorageManager()) {
-                                Toast.makeText(DownloadFileActivity.this, "Permission Granted in Android 11", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(JobIntentServiceActivity.this, "Permission Granted in Android 11", Toast.LENGTH_SHORT).show();
                             } else {
                                 takePermission();
                             }
@@ -83,52 +94,31 @@ public class DownloadFileActivity extends AppCompatActivity {
                 }
             });
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_second);
-        downloadStatus = findViewById(R.id.download_status);
-        Button btnDownload = findViewById(R.id.btn_download);
-        btnDownload.setOnClickListener(onDownloadListener());
-
-    }
-
     private View.OnClickListener onDownloadListener() {
-        return new View.OnClickListener() {
-            @SuppressLint("SetTextI18n")
-            @Override
-            public void onClick(View v) {
-               if(isPermissionGranted()){
-                   //todo : --->  we can make another approach to pass different file types and file names
-                   downloadFile("file_example.doc", docFile_url);
+        return v -> {
+            if (isPermissionGranted()) {
+                //todo : --->  we can make another approach to pass different file types and file names
+                downloadFile("file_example.doc", docFile_url);
 
 
-               } else
-                   takePermissions();
-            }
+            } else
+                takePermissions();
         };
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        unregisterReceiver(receiver);
-    }
-
     private void downloadFile(String fileName, String fileUrl) {
-        Intent intent = new Intent(DownloadFileActivity.this, DownloadJobService.class);
-        intent.putExtra(DownloadJobService.FILENAME, fileName);
-        intent.putExtra(DownloadJobService.URL, fileUrl);
+        Intent intent = new Intent(JobIntentServiceActivity.this, DownloadJobIntentService.class);
+        intent.putExtra(DownloadJobIntentService.FILENAME, fileName);
+        intent.putExtra(DownloadJobIntentService.URL, fileUrl);
         startService(intent);
         downloadStatus.setText("Downloading...");
-        Toast.makeText(DownloadFileActivity.this, "Already got access permission", Toast.LENGTH_SHORT).show();
+        Toast.makeText(JobIntentServiceActivity.this, "Already got access permission", Toast.LENGTH_SHORT).show();
 
     }
-
 
     private void sendMyNotification(String message) {
 
-        Intent intent = new Intent(this, DownloadFileActivity.class);
+        Intent intent = new Intent(this, JobIntentServiceActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
 
@@ -160,17 +150,6 @@ public class DownloadFileActivity extends AppCompatActivity {
         mNotificationManager.notify(0, notificationBuilder.build());
     }
 
-
-
-    private void takePermissions() {
-        if (isPermissionGranted()) {
-            Toast.makeText(DownloadFileActivity.this, "Already Permission Granted", Toast.LENGTH_SHORT).show();
-
-        } else {
-            takePermission();
-        }
-    }
-
     private boolean isPermissionGranted() {
         //for Android 11
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
@@ -181,12 +160,6 @@ public class DownloadFileActivity extends AppCompatActivity {
             int readExternalStoragePermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
             return readExternalStoragePermission == PackageManager.PERMISSION_GRANTED;
         }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        registerReceiver(receiver, new IntentFilter(DownloadJobService.NOTIFICATION));
     }
 
     private void takePermission() {
@@ -226,5 +199,26 @@ public class DownloadFileActivity extends AppCompatActivity {
 
     }
 
+    private void takePermissions() {
+        if (isPermissionGranted()) {
+            Toast.makeText(JobIntentServiceActivity.this, "Already Permission Granted", Toast.LENGTH_SHORT).show();
+
+        } else {
+            takePermission();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver(receiver);
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        registerReceiver(receiver, new IntentFilter(DownloadJobIntentService.NOTIFICATION));
+    }
 
 }

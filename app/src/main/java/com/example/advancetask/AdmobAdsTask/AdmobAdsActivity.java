@@ -1,15 +1,15 @@
 package com.example.advancetask.AdmobAdsTask;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 
-import com.example.advancetask.ServiceTask.DownloadFileActivity;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.advancetask.R;
+import com.example.advancetask.ServiceTask.JobIntentServiceActivity;
 import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
@@ -76,7 +76,7 @@ public class AdmobAdsActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 showInterstitial();
-               startActivity(new Intent(AdmobAdsActivity.this, DownloadFileActivity.class));
+                startActivity(new Intent(AdmobAdsActivity.this, JobIntentServiceActivity.class));
             }
         });
 

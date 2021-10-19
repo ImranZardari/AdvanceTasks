@@ -15,7 +15,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 
-public class DownloadJobService extends JobIntentService {
+public class DownloadJobIntentService extends JobIntentService {
 
     public static final String URL = "url";
     public static final String FILENAME = "name";
@@ -24,7 +24,7 @@ public class DownloadJobService extends JobIntentService {
     public static final String NOTIFICATION = "notification";
 
 
-    public DownloadJobService() {
+    public DownloadJobIntentService() {
         super();
     }
 
