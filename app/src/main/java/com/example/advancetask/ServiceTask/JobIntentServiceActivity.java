@@ -1,7 +1,6 @@
 package com.example.advancetask.ServiceTask;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -59,7 +58,6 @@ public class JobIntentServiceActivity extends AppCompatActivity {
     }
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
-        @SuppressLint("SetTextI18n")
         @Override
         public void onReceive(Context context, Intent intent) {
             Bundle bundle = intent.getExtras();
@@ -110,7 +108,7 @@ public class JobIntentServiceActivity extends AppCompatActivity {
         Intent intent = new Intent(JobIntentServiceActivity.this, DownloadJobIntentService.class);
         intent.putExtra(DownloadJobIntentService.FILENAME, fileName);
         intent.putExtra(DownloadJobIntentService.URL, fileUrl);
-        startService(intent);
+        DownloadJobIntentService.enqueueWork(this, intent);
         downloadStatus.setText("Downloading...");
         Toast.makeText(JobIntentServiceActivity.this, "Already got access permission", Toast.LENGTH_SHORT).show();
 

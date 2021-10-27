@@ -1,6 +1,7 @@
 package com.example.advancetask.ServiceTask.Utils;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Environment;
 
@@ -27,6 +28,11 @@ public class DownloadJobIntentService extends JobIntentService {
     public DownloadJobIntentService() {
         super();
     }
+
+    public static void enqueueWork(Context context, Intent work) {
+        enqueueWork(context, DownloadJobIntentService.class, 123, work);
+    }
+
 
     @Override
     protected void onHandleWork(@NonNull @NotNull Intent intent) {
